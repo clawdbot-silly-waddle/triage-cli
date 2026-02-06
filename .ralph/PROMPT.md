@@ -16,6 +16,15 @@ API docs: https://tria.ge/docs/
 Test API key (for indev only): 063a1a04f12f3ef23fd4ea6fd8db6d4b4f2ad73f
 ZIP password for samples: "infected"
 
+## Execution Environment
+
+You are running in a **VM with full network access**. You can and should:
+- Make HTTP requests to external APIs (including tria.ge)
+- Download files (including malware samples for testing)
+- Execute shell commands
+
+**IMPORTANT SAFETY NOTE**: When testing the `sample` subcommand, you may download malware samples for verification purposes, but **NEVER execute or run the downloaded samples**. They are for testing the download/extraction functionality only.
+
 ## Current Objectives
 1. Study .ralph/specs/* to learn about the project specifications
 2. Review .ralph/fix_plan.md for current priorities
