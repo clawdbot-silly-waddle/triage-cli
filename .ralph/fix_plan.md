@@ -1,19 +1,19 @@
 # Ralph Fix Plan
 
 ## High Priority
-- [ ] Set up Python 3.13 project with uv (pyproject.toml, project structure)
-- [ ] Implement API client for tria.ge with authentication (config file + env var)
-- [ ] Implement target URL/hash parsing (auto-detect type)
-- [ ] Implement hash search (MD5, SHA1, SHA256, SHA512, SSDEEP, TLSH)
-- [ ] Implement `sample` subcommand to download samples (decrypt ZIP, delete after extraction)
-- [ ] Implement `domains` subcommand to download contacted domains/URLs (deduplicate across analyses)
-- [ ] Implement `dumps` subcommand to download dynamic analysis dumped files (handle filename conflicts)
+- [x] Set up Python 3.13 project with uv (pyproject.toml, project structure)
+- [x] Implement API client for tria.ge with authentication (config file + env var)
+- [x] Implement target URL/hash parsing (auto-detect type)
+- [x] Implement hash search (MD5, SHA1, SHA256, SHA512, SSDEEP, TLSH)
+- [x] Implement `sample` subcommand to download samples (decrypt ZIP, delete after extraction)
+- [x] Implement `domains` subcommand to download contacted domains/URLs (deduplicate across analyses)
+- [x] Implement `dumps` subcommand to download dynamic analysis dumped files (handle filename conflicts)
 
 ## Medium Priority
-- [ ] Add proper error handling and user-friendly messages
-- [ ] Add CLI tests with mocked API responses
+- [x] Add proper error handling and user-friendly messages
+- [x] Add CLI tests with mocked API responses
 - [ ] Test against live tria.ge API with test key
-- [ ] Create README with usage examples
+- [x] Create README with usage examples
 
 ## Low Priority
 - [ ] Add progress bars for downloads

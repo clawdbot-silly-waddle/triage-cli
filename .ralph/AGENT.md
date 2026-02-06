@@ -30,7 +30,7 @@ uv run pytest
 uv run pytest --cov=src tests/ --cov-report=term-missing
 
 # Run specific test file
-uv run pytest tests/test_api.py -v
+uv run pytest tests/test_target.py -v
 ```
 
 ## Type Checking
@@ -74,12 +74,30 @@ uv run triage --help
 ## Configuration
 
 The CLI looks for API key in this order:
-1. Config file: `~/.config/triage/config.toml` (or `$XDG_CONFIG_HOME/triage/config.toml`)
-2. Environment variable: `TRIAGE_API_KEY`
+1. Environment variable: `TRIAGE_API_KEY`
+2. Config file: `~/.config/triage/config.toml`
 
 Config file format:
 ```toml
 api_key = "your-api-key-here"
+```
+
+## Project Structure
+
+```
+.
+├── src/triage/
+│   ├── __init__.py      # Package init
+│   ├── __main__.py      # Entry point for `python -m triage`
+│   ├── cli.py           # CLI implementation (Click)
+│   ├── api.py           # API client (httpx)
+│   ├── config.py        # Configuration management
+│   └── target.py        # Target parsing (URLs/hashes)
+├── tests/
+│   ├── test_target.py   # Target parsing tests
+│   └── test_config.py   # Configuration tests
+├── pyproject.toml       # Project configuration
+└── README.md            # User documentation
 ```
 
 ## Key Learnings
@@ -87,3 +105,4 @@ api_key = "your-api-key-here"
 - Test against live API with care (rate limits apply)
 - ZIP password for samples is always "infected"
 - Target types: hash (MD5/SHA1/SHA256/SHA512/SSDEEP/TLSH), submission URL, analysis URL
+- Config priority: env var > config file

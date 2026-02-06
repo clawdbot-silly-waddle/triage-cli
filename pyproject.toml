@@ -1,0 +1,23 @@
+[project]
+name = "triage"
+version = "0.1.0"
+description = "CLI tool for tria.ge malware analysis API"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.3.1",
+    "httpx>=0.28.1",
+    "toml>=0.10.2",
+]
+
+[tool.uv]
+package = true
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+]
+
+[project.scripts]
+triage = "triage.cli:main"
