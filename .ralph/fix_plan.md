@@ -12,7 +12,12 @@
 ## Medium Priority
 - [x] Add proper error handling and user-friendly messages
 - [x] Add CLI tests with mocked API responses
-- [x] Test against live tria.ge API with test key
+- [ ] Add automated integration tests that call the live tria.ge API
+  - MUST: Tests should be in tests/test_integration.py
+  - MUST: Tests must actually call the live API (not mocked)
+  - MUST: Test TriageClient methods directly (search_by_hash, get_submission, etc.)
+  - MUST: Verify API responses are handled correctly
+  - The API key is already configured at ~/.config/triage/config.toml
 - [x] Create README with usage examples
 
 ## Low Priority

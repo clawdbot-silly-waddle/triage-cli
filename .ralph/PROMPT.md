@@ -25,6 +25,18 @@ You are running in a **VM with full network access**. You can and should:
 
 **IMPORTANT SAFETY NOTE**: When testing the `sample` subcommand, you may download malware samples for verification purposes, but **NEVER execute or run the downloaded samples**. They are for testing the download/extraction functionality only.
 
+## Critical Requirements for This Run
+
+**YOU MUST ADD INTEGRATION TESTS THAT CALL THE LIVE TRIA.GE API.**
+
+The current test suite only has unit tests. You must create `tests/test_integration.py` with tests that:
+1. Actually call the live tria.ge API (NOT mocked)
+2. Test the TriageClient methods directly (search_by_hash, get_submission, get_domains, etc.)
+3. Verify real API responses are handled correctly
+4. Use the already-configured API key at ~/.config/triage/config.toml
+
+**DO NOT mark the integration test task as complete until you have created tests that actually make HTTP requests to api.tria.ge and verify the responses.**
+
 ## Current Objectives
 1. Study .ralph/specs/* to learn about the project specifications
 2. Review .ralph/fix_plan.md for current priorities
