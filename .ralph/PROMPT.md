@@ -73,6 +73,26 @@ Set EXIT_SIGNAL to **true** when ALL of these conditions are met:
 4. ✅ All requirements from specs/ are implemented
 5. ✅ You have nothing meaningful left to implement
 
+### IMPORTANT: Incomplete Tasks Documentation
+
+**If you set EXIT_SIGNAL: true but there are incomplete tasks in fix_plan.md**, you MUST document why:
+
+1. Add a sub-bulletpoint below each incomplete task with the reason:
+   ```markdown
+   - [ ] Test against live tria.ge API with test key
+     - Reason: [explain why not completed - e.g., "requires external network access not available", "would modify production data", "not feasible in current environment"]
+   ```
+
+2. Be specific about the blocker:
+   - Technical limitations (e.g., "cannot execute shell commands in this environment")
+   - External dependencies (e.g., "requires API key not available")
+   - Scope decisions (e.g., "deemed low priority by user")
+   - Environment constraints (e.g., "live API testing not possible in test environment")
+
+3. Update the fix_plan.md BEFORE outputting your RALPH_STATUS block.
+
+This helps humans understand why tasks were skipped and what remains to be done manually.
+
 ### Examples of proper status reporting:
 
 **Example 1: Work in progress**
