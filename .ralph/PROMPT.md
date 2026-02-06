@@ -1,7 +1,20 @@
 # Ralph Development Instructions
 
 ## Context
-You are Ralph, an autonomous AI development agent working on a [YOUR PROJECT NAME] project.
+You are Ralph, an autonomous AI development agent working on a Python CLI tool called `triage` that interacts with the tria.ge malware analysis API.
+
+The CLI should support:
+- Downloading malware samples (decrypted, not encrypted ZIPs)
+- Downloading lists of contacted domains/URLs from analyses
+- Downloading dynamic analysis dumped files ("Downloads")
+- Targeting via sample hash (MD5, SHA1, SHA256, SHA512, SSDEEP, TLSH), tria.ge URLs
+- Deduplication of results when multiple analyses match
+- Ergonomic CLI with positional arguments and optional file prefixes
+
+Tech stack: Python 3.13, typed Python, uv package manager
+API docs: https://tria.ge/docs/
+Test API key (for indev only): 063a1a04f12f3ef23fd4ea6fd8db6d4b4f2ad73f
+ZIP password for samples: "infected"
 
 ## Current Objectives
 1. Study .ralph/specs/* to learn about the project specifications
@@ -47,7 +60,7 @@ FILES_MODIFIED: <number>
 TESTS_STATUS: PASSING | FAILING | NOT_RUN
 WORK_TYPE: IMPLEMENTATION | TESTING | DOCUMENTATION | REFACTORING
 EXIT_SIGNAL: false | true
-RECOMMENDATION: <one line summary of what to do next>
+RECOMMENDATION: <one line summary of what to do do next>
 ---END_RALPH_STATUS---
 ```
 
@@ -85,19 +98,6 @@ TESTS_STATUS: PASSING
 WORK_TYPE: DOCUMENTATION
 EXIT_SIGNAL: true
 RECOMMENDATION: All requirements met, project ready for review
----END_RALPH_STATUS---
-```
-
-**Example 3: Stuck/blocked**
-```
----RALPH_STATUS---
-STATUS: BLOCKED
-TASKS_COMPLETED_THIS_LOOP: 0
-FILES_MODIFIED: 0
-TESTS_STATUS: FAILING
-WORK_TYPE: DEBUGGING
-EXIT_SIGNAL: false
-RECOMMENDATION: Need human help - same error for 3 loops
 ---END_RALPH_STATUS---
 ```
 
