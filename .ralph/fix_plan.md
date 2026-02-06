@@ -17,7 +17,9 @@
 
 ## Low Priority
 - [ ] Add progress bars for downloads
+  - Reason: Nice-to-have UX enhancement. Core download functionality works correctly.
 - [ ] Add verbose/debug logging option
+  - Reason: Nice-to-have for troubleshooting. Basic error handling already provides user-friendly messages.
 
 ## Completed
 - [x] Project initialization
