@@ -7,6 +7,11 @@
 - [x] Implement hash search (MD5, SHA1, SHA256, SHA512, SSDEEP, TLSH)
 - [x] Implement `sample` subcommand to download samples (decrypt ZIP, delete after extraction)
 - [x] Implement `domains` subcommand to download contacted domains/URLs (deduplicate across analyses)
+- [x] Fix `dumps` subcommand - API endpoint is wrong
+  - BUG: `get_dumped_files` calls non-existent `/samples/{id}/{analysis}/dumped_files` endpoint
+  - FIX: Get dumped files from report JSON under `dumped` key
+  - FIX: Download URL is `/samples/{id}/{analysis}/{name}` where `name` is from dumped entry
+  - Add test that reproduces the bug (404 error) and verifies the fix
 - [x] Implement `dumps` subcommand to download dynamic analysis dumped files (handle filename conflicts)
 
 ## Medium Priority

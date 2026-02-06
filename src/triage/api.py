@@ -172,24 +172,21 @@ class TriageClient:
         Returns:
             List of dumped file metadata
         """
-        response = self.client.get(
-            f"/samples/{submission_id}/{analysis_name}/dumped_files"
-        )
-        self._handle_error(response)
-        return response.json()
+        report = self.get_report(submission_id, analysis_name)
+        return report.get("dumped", [])
 
     def download_dumped_file(
-        self, submission_id: str, analysis_name: str, file_id: str, output_path: str
+        self, submission_id: str, analysis_name: str, file_name: str, output_path: str
     ) -> None:
         """Download a dumped file.
 
         Args:
             submission_id: The submission ID
             analysis_name: The analysis name
-            file_id: The file ID
+            file_name: The file name from the dumped entry (e.g., "files/fstream-1.dat")
             output_path: Path to save the file
         """
-        url = f"{BASE_URL}/samples/{submission_id}/{analysis_name}/dumped_files/{file_id}"
+        url = f"{BASE_URL}/samples/{submission_id}/{analysis_name}/{file_name}"
         with self.client.stream("GET", url) as response:
             self._handle_error(response)
             with open(output_path, "wb") as f:

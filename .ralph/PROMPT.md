@@ -27,15 +27,28 @@ You are running in a **VM with full network access**. You can and should:
 
 ## Critical Requirements for This Run
 
-**YOU MUST ADD INTEGRATION TESTS THAT CALL THE LIVE TRIA.GE API.**
+**YOU MUST FIX THE `dumps` COMMAND BUG.**
 
-The current test suite only has unit tests. You must create `tests/test_integration.py` with tests that:
-1. Actually call the live tria.ge API (NOT mocked)
-2. Test the TriageClient methods directly (search_by_hash, get_submission, get_domains, etc.)
-3. Verify real API responses are handled correctly
-4. Use the already-configured API key at ~/.config/triage/config.toml
+The `triage dumps` command is broken - it returns "API Error (404): Not found" when trying to download dumped files.
 
-**DO NOT mark the integration test task as complete until you have created tests that actually make HTTP requests to api.tria.ge and verify the responses.**
+### The Bug
+The `get_dumped_files()` method in `src/triage/api.py` calls a non-existent endpoint:
+- WRONG: `/samples/{id}/{analysis}/dumped_files` (returns 404)
+
+### The Fix
+1. Dumped files are located in the report JSON under the `dumped` key
+2. Get them by calling `get_report()` and extracting `report.get("dumped", [])`
+3. Download URL format: `/samples/{id}/{analysis}/{name}` where `name` is the value from the dumped entry's `name` field (e.g., `files/fstream-1.dat`)
+
+### What You Must Do
+1. Fix the `get_dumped_files()` method in `src/triage/api.py`
+2. Fix the `download_dumped_file()` method to use the correct URL format
+3. Add a test that:
+   - Reproduces the bug (verifies 404 error with old code)
+   - Verifies the fix works (downloads actual dumped files from `260206-mrmcdshv5h/behavioral1`)
+4. Verify `triage dumps https://tria.ge/260206-mrmcdshv5h/behavioral1` works correctly
+
+**DO NOT mark the dumps fix task as complete until the CLI command successfully downloads dumped files.**
 
 ## Current Objectives
 1. Study .ralph/specs/* to learn about the project specifications

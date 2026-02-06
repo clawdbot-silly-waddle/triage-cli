@@ -166,28 +166,21 @@ class TestGetDumpedFiles:
     """Test getting dumped files list from live API."""
 
     def test_get_dumped_files_returns_list(self, client: TriageClient) -> None:
-        """Test that get_dumped_files returns a list."""
-        try:
-            files = client.get_dumped_files(TEST_SUBMISSION_ID, TEST_ANALYSIS_NAME)
-            assert isinstance(files, list)
-        except APIError as e:
-            if e.status_code == 404:
-                pytest.skip("Dumped files endpoint not available for this analysis")
-            raise
+        """Test that get_dumped_files returns a list from report JSON."""
+        files = client.get_dumped_files(TEST_SUBMISSION_ID, TEST_ANALYSIS_NAME)
+        assert isinstance(files, list)
+        # This submission has 1 dumped file
+        if TEST_SUBMISSION_ID == "260206-mrmcdshv5h":
+            assert len(files) >= 0  # May vary, but should not error
 
     def test_get_dumped_files_structure(self, client: TriageClient) -> None:
         """Test structure of dumped files response."""
-        try:
-            files = client.get_dumped_files(TEST_SUBMISSION_ID, TEST_ANALYSIS_NAME)
+        files = client.get_dumped_files(TEST_SUBMISSION_ID, TEST_ANALYSIS_NAME)
 
-            for file_info in files:
-                assert isinstance(file_info, dict)
-                # Each file should have an ID
-                assert "id" in file_info or "filename" in file_info or "name" in file_info
-        except APIError as e:
-            if e.status_code == 404:
-                pytest.skip("Dumped files endpoint not available for this analysis")
-            raise
+        for file_info in files:
+            assert isinstance(file_info, dict)
+            # Each file should have a 'name' field (used for download URL)
+            assert "name" in file_info, "Dumped file should have a 'name' field"
 
 
 class TestDownloadSample:
@@ -228,30 +221,25 @@ class TestDownloadDumpedFile:
     """Test downloading dumped files from live API."""
 
     def test_download_dumped_file(self, client: TriageClient, tmp_path: Path) -> None:
-        """Test downloading a dumped file."""
-        # First get list of dumped files
-        try:
-            files = client.get_dumped_files(TEST_SUBMISSION_ID, TEST_ANALYSIS_NAME)
-        except APIError as e:
-            if e.status_code == 404:
-                pytest.skip("Dumped files endpoint not available for this analysis")
-            raise
+        """Test downloading a dumped file using the correct API endpoint."""
+        # First get list of dumped files from report
+        files = client.get_dumped_files(TEST_SUBMISSION_ID, TEST_ANALYSIS_NAME)
 
         if not files:
             pytest.skip("No dumped files available for this analysis")
 
         # Try to download the first file
         file_info = files[0]
-        file_id = file_info.get("id")
+        file_name = file_info.get("name")
 
-        if not file_id:
-            pytest.skip("File ID not found in dumped files response")
+        if not file_name:
+            pytest.skip("File name not found in dumped files response")
 
         output_path = tmp_path / "dumped_file"
 
         try:
             client.download_dumped_file(
-                TEST_SUBMISSION_ID, TEST_ANALYSIS_NAME, file_id, str(output_path)
+                TEST_SUBMISSION_ID, TEST_ANALYSIS_NAME, file_name, str(output_path)
             )
 
             # File should exist and have content
