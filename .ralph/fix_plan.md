@@ -12,7 +12,7 @@
 ## Medium Priority
 - [x] Add proper error handling and user-friendly messages
 - [x] Add CLI tests with mocked API responses
-- [ ] Test against live tria.ge API with test key
+- [x] Test against live tria.ge API with test key
 - [x] Create README with usage examples
 
 ## Low Priority

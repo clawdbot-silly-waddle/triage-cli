@@ -69,7 +69,11 @@ class TriageClient:
         """
         response = self.client.get("/search", params={"query": hash_value})
         self._handle_error(response)
-        return response.json()
+        data = response.json()
+        # API returns {"data": [...], "next": ...} structure
+        if isinstance(data, dict) and "data" in data:
+            return data["data"]
+        return data if isinstance(data, list) else []
 
     def get_submission(self, submission_id: str) -> dict[str, Any]:
         """Get submission details.
