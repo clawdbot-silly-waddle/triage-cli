@@ -12,7 +12,7 @@
 ## Medium Priority
 - [x] Add proper error handling and user-friendly messages
 - [x] Add CLI tests with mocked API responses
-- [ ] Add automated integration tests that call the live tria.ge API
+- [x] Add automated integration tests that call the live tria.ge API
   - MUST: Tests should be in tests/test_integration.py
   - MUST: Tests must actually call the live API (not mocked)
   - MUST: Test TriageClient methods directly (search_by_hash, get_submission, etc.)
