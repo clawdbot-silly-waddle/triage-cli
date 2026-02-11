@@ -196,6 +196,23 @@ class TriageClient:
                 for chunk in response.iter_bytes():
                     f.write(chunk)
 
+    def get_dumped_file_metadata(self, submission_id: str, analysis_name: str, file_id: str) -> dict[str, Any]:
+        """Get detailed metadata for a dumped file.
+
+        Args:
+            submission_id: The submission ID
+            analysis_name: The analysis name
+            file_id: The file ID
+
+        Returns:
+            Dumped file metadata including original path
+        """
+        response = self.client.get(
+            f"/samples/{submission_id}/{analysis_name}/dumped_files/{file_id}"
+        )
+        self._handle_error(response)
+        return response.json()
+
     def close(self) -> None:
         """Close the HTTP client."""
         self.client.close()

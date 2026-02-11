@@ -3,3 +3,19 @@ __pycache__/
 *.pyc
 .python-version
 uv.lock
+
+# Ralph ephemeral/state files
+.ralph/.call_count
+.ralph/.circuit_breaker*
+.ralph/.exit_signals
+.ralph/.last_reset
+.ralph/.ralph_session*
+.ralph/live.log
+.ralph/logs/
+.ralph/progress.json
+.ralph/status.json
+
+# Config files with potential secrets
+config.toml
+*.key
+.env

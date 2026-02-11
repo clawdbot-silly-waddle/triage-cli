@@ -19,6 +19,59 @@ if TYPE_CHECKING:
 ZIP_PASSWORD = b"infected"
 
 
+def get_original_filename(dumped_file: dict[str, Any]) -> str:
+    """Extract the original filename from dumped file metadata.
+
+    The API returns a 'filename' field which is often a triage-internal name
+    like 'fstream-1.dat'. The original filename can be extracted from the
+    'path' or 'orig_file' field in the metadata.
+
+    Args:
+        dumped_file: The dumped file metadata from the API
+
+    Returns:
+        The original filename (basename from the original path)
+    """
+    # Try to get original path from various metadata fields
+    # Priority: path > orig_file > filename > id
+    original_path = (
+        dumped_file.get("path")
+        or dumped_file.get("orig_file")
+        or dumped_file.get("filename")
+        or dumped_file.get("id", "unknown")
+    )
+
+    # Extract basename from the path
+    return Path(original_path).name
+
+
+def disambiguate_filename(filename: str, seen_names: dict[str, int]) -> str:
+    """Generate a unique filename by appending a counter if needed.
+
+    Args:
+        filename: The desired filename
+        seen_names: Dictionary tracking how many times each base name has been used
+
+    Returns:
+        A unique filename (original or with counter appended before extension)
+    """
+    if filename not in seen_names:
+        seen_names[filename] = 0
+        return filename
+
+    # Increment counter for this filename
+    seen_names[filename] += 1
+    count = seen_names[filename]
+
+    # Split filename into name and extension
+    path = Path(filename)
+    stem = path.stem
+    suffix = path.suffix
+
+    # Append counter before extension
+    return f"{stem}-{count}{suffix}"
+
+
 @click.group()
 @click.version_option(version="0.1.0")
 def cli() -> None:
@@ -281,7 +334,7 @@ def dumps(target: str, prefix: str | None) -> None:
                                             submission_id,
                                             analysis_name,
                                             f["id"],
-                                            f.get("filename", f["id"]),
+                                            get_original_filename(f),
                                         )
                                     )
                             except APIError:
@@ -296,7 +349,7 @@ def dumps(target: str, prefix: str | None) -> None:
                             parsed.submission_id,
                             parsed.analysis_name,
                             f["id"],
-                            f.get("filename", f["id"]),
+                            get_original_filename(f),
                         )
                     )
 
@@ -318,7 +371,7 @@ def dumps(target: str, prefix: str | None) -> None:
                                         parsed.submission_id,
                                         analysis_name,
                                         f["id"],
-                                        f.get("filename", f["id"]),
+                                        get_original_filename(f),
                                     )
                                 )
                         except APIError:
@@ -340,12 +393,16 @@ def dumps(target: str, prefix: str | None) -> None:
 
             # Download files with unique names
             downloaded: list[Path] = []
+            seen_names: dict[str, int] = {}
             for submission_id, analysis_name, file_id, filename in files_to_download:
+                # Disambiguate filename to handle duplicates
+                unique_filename = disambiguate_filename(filename, seen_names)
+
                 if prefix and not prefix.endswith("/"):
                     # Add prefix to filename
-                    output_filename = f"{prefix}-{submission_id}-{analysis_name}-{filename}"
+                    output_filename = f"{prefix}-{submission_id}-{analysis_name}-{unique_filename}"
                 else:
-                    output_filename = f"{submission_id}-{analysis_name}-{filename}"
+                    output_filename = f"{submission_id}-{analysis_name}-{unique_filename}"
 
                 output_path = output_dir / output_filename
                 client.download_dumped_file(submission_id, analysis_name, file_id, str(output_path))
