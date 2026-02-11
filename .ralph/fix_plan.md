@@ -8,7 +8,7 @@
 - [x] Implement `sample` subcommand to download samples (decrypt ZIP, delete after extraction)
 - [x] Implement `domains` subcommand to download contacted domains/URLs (deduplicate across analyses)
 - [x] Implement `dumps` subcommand to download dynamic analysis dumped files (handle filename conflicts)
-- [ ] Fix `dumps` subcommand to use original filenames instead of triage-internal names like `fstream-1.dat`
+- [x] Fix `dumps` subcommand to use original filenames instead of triage-internal names like `fstream-1.dat`
   - Extract original filename from dumped file metadata
   - Handle duplicate original filenames with smart disambiguation (counters or path components)
   - See `.ralph/specs/original-filenames.md` for details
