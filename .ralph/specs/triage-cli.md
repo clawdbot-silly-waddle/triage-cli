@@ -145,7 +145,7 @@ Detect hash type by length and pattern:
 
 ### Test API Key
 
-For development: `063a1a04f12f3ef23fd4ea6fd8db6d4b4f2ad73f`
+For development, use a test API key (not included in this repository)
 
 ⚠️ This key should NOT be committed to git.
 

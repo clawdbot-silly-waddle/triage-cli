@@ -7,16 +7,22 @@
 - [x] Implement hash search (MD5, SHA1, SHA256, SHA512, SSDEEP, TLSH)
 - [x] Implement `sample` subcommand to download samples (decrypt ZIP, delete after extraction)
 - [x] Implement `domains` subcommand to download contacted domains/URLs (deduplicate across analyses)
+- [x] Fix `dumps` subcommand - API endpoint is wrong
+  - BUG: `get_dumped_files` calls non-existent `/samples/{id}/{analysis}/dumped_files` endpoint
+  - FIX: Get dumped files from report JSON under `dumped` key
+  - FIX: Download URL is `/samples/{id}/{analysis}/{name}` where `name` is from dumped entry
+  - Add test that reproduces the bug (404 error) and verifies the fix
 - [x] Implement `dumps` subcommand to download dynamic analysis dumped files (handle filename conflicts)
-- [x] Fix `dumps` subcommand to use original filenames instead of triage-internal names like `fstream-1.dat`
-  - Extract original filename from dumped file metadata
-  - Handle duplicate original filenames with smart disambiguation (counters or path components)
-  - See `.ralph/specs/original-filenames.md` for details
 
 ## Medium Priority
 - [x] Add proper error handling and user-friendly messages
 - [x] Add CLI tests with mocked API responses
-- [x] Test against live tria.ge API with test key
+- [x] Add automated integration tests that call the live tria.ge API
+  - MUST: Tests should be in tests/test_integration.py
+  - MUST: Tests must actually call the live API (not mocked)
+  - MUST: Test TriageClient methods directly (search_by_hash, get_submission, etc.)
+  - MUST: Verify API responses are handled correctly
+  - The API key is already configured at ~/.config/triage/config.toml
 - [x] Create README with usage examples
 
 ## Low Priority

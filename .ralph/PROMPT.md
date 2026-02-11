@@ -13,7 +13,7 @@ The CLI should support:
 
 Tech stack: Python 3.13, typed Python, uv package manager
 API docs: https://tria.ge/docs/
-Test API key (for indev only): 063a1a04f12f3ef23fd4ea6fd8db6d4b4f2ad73f
+Test API key should be set via environment variable (not included in repository)
 ZIP password for samples: "infected"
 
 ## Execution Environment
@@ -24,6 +24,31 @@ You are running in a **VM with full network access**. You can and should:
 - Execute shell commands
 
 **IMPORTANT SAFETY NOTE**: When testing the `sample` subcommand, you may download malware samples for verification purposes, but **NEVER execute or run the downloaded samples**. They are for testing the download/extraction functionality only.
+
+## Critical Requirements for This Run
+
+**YOU MUST FIX THE `dumps` COMMAND BUG.**
+
+The `triage dumps` command is broken - it returns "API Error (404): Not found" when trying to download dumped files.
+
+### The Bug
+The `get_dumped_files()` method in `src/triage/api.py` calls a non-existent endpoint:
+- WRONG: `/samples/{id}/{analysis}/dumped_files` (returns 404)
+
+### The Fix
+1. Dumped files are located in the report JSON under the `dumped` key
+2. Get them by calling `get_report()` and extracting `report.get("dumped", [])`
+3. Download URL format: `/samples/{id}/{analysis}/{name}` where `name` is the value from the dumped entry's `name` field (e.g., `files/fstream-1.dat`)
+
+### What You Must Do
+1. Fix the `get_dumped_files()` method in `src/triage/api.py`
+2. Fix the `download_dumped_file()` method to use the correct URL format
+3. Add a test that:
+   - Reproduces the bug (verifies 404 error with old code)
+   - Verifies the fix works (downloads actual dumped files from `260206-mrmcdshv5h/behavioral1`)
+4. Verify `triage dumps https://tria.ge/260206-mrmcdshv5h/behavioral1` works correctly
+
+**DO NOT mark the dumps fix task as complete until the CLI command successfully downloads dumped files.**
 
 ## Current Objectives
 1. Study .ralph/specs/* to learn about the project specifications

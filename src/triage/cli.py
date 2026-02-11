@@ -19,32 +19,6 @@ if TYPE_CHECKING:
 ZIP_PASSWORD = b"infected"
 
 
-def get_original_filename(dumped_file: dict[str, Any]) -> str:
-    """Extract the original filename from dumped file metadata.
-
-    The API returns a 'filename' field which is often a triage-internal name
-    like 'fstream-1.dat'. The original filename can be extracted from the
-    'path' or 'orig_file' field in the metadata.
-
-    Args:
-        dumped_file: The dumped file metadata from the API
-
-    Returns:
-        The original filename (basename from the original path)
-    """
-    # Try to get original path from various metadata fields
-    # Priority: path > orig_file > filename > id
-    original_path = (
-        dumped_file.get("path")
-        or dumped_file.get("orig_file")
-        or dumped_file.get("filename")
-        or dumped_file.get("id", "unknown")
-    )
-
-    # Extract basename from the path
-    return Path(original_path).name
-
-
 def disambiguate_filename(filename: str, seen_names: dict[str, int]) -> str:
     """Generate a unique filename by appending a counter if needed.
 
@@ -302,7 +276,7 @@ def dumps(target: str, prefix: str | None) -> None:
 
             files_to_download: list[tuple[str, str, str, str]] = (
                 []
-            )  # (submission_id, analysis_name, file_id, filename)
+            )  # (submission_id, analysis_name, file_name, filename)
 
             if isinstance(parsed, HashTarget):
                 # Search for submissions by hash
@@ -329,14 +303,16 @@ def dumps(target: str, prefix: str | None) -> None:
                                     submission_id, analysis_name
                                 )
                                 for f in dumped:
-                                    files_to_download.append(
-                                        (
-                                            submission_id,
-                                            analysis_name,
-                                            f["id"],
-                                            get_original_filename(f),
+                                    file_name = f.get("name", "")
+                                    if file_name:
+                                        files_to_download.append(
+                                            (
+                                                submission_id,
+                                                analysis_name,
+                                                file_name,
+                                                f.get("filename", file_name),
+                                            )
                                         )
-                                    )
                             except APIError:
                                 pass
 
@@ -344,14 +320,16 @@ def dumps(target: str, prefix: str | None) -> None:
                 # Single analysis
                 dumped = client.get_dumped_files(parsed.submission_id, parsed.analysis_name)
                 for f in dumped:
-                    files_to_download.append(
-                        (
-                            parsed.submission_id,
-                            parsed.analysis_name,
-                            f["id"],
-                            get_original_filename(f),
+                    file_name = f.get("name", "")
+                    if file_name:
+                        files_to_download.append(
+                            (
+                                parsed.submission_id,
+                                parsed.analysis_name,
+                                file_name,
+                                f.get("filename", file_name),
+                            )
                         )
-                    )
 
             elif isinstance(parsed, SubmissionTarget):
                 # All analyses in submission
@@ -366,14 +344,16 @@ def dumps(target: str, prefix: str | None) -> None:
                                 parsed.submission_id, analysis_name
                             )
                             for f in dumped:
-                                files_to_download.append(
-                                    (
-                                        parsed.submission_id,
-                                        analysis_name,
-                                        f["id"],
-                                        get_original_filename(f),
+                                file_name = f.get("name", "")
+                                if file_name:
+                                    files_to_download.append(
+                                        (
+                                            parsed.submission_id,
+                                            analysis_name,
+                                            file_name,
+                                            f.get("filename", file_name),
+                                        )
                                     )
-                                )
                         except APIError:
                             pass
 
@@ -394,10 +374,11 @@ def dumps(target: str, prefix: str | None) -> None:
             # Download files with unique names
             downloaded: list[Path] = []
             seen_names: dict[str, int] = {}
-            for submission_id, analysis_name, file_id, filename in files_to_download:
+            for submission_id, analysis_name, file_name, filename in files_to_download:
+                # Sanitize filename to avoid path issues (e.g., "files/fstream-1.dat")
+                safe_filename = filename.replace("/", "-")
                 # Disambiguate filename to handle duplicates
-                unique_filename = disambiguate_filename(filename, seen_names)
-
+                unique_filename = disambiguate_filename(safe_filename, seen_names)
                 if prefix and not prefix.endswith("/"):
                     # Add prefix to filename
                     output_filename = f"{prefix}-{submission_id}-{analysis_name}-{unique_filename}"
@@ -405,7 +386,7 @@ def dumps(target: str, prefix: str | None) -> None:
                     output_filename = f"{submission_id}-{analysis_name}-{unique_filename}"
 
                 output_path = output_dir / output_filename
-                client.download_dumped_file(submission_id, analysis_name, file_id, str(output_path))
+                client.download_dumped_file(submission_id, analysis_name, file_name, str(output_path))
                 downloaded.append(output_path)
 
             click.echo(f"Downloaded {len(downloaded)} files to: {output_dir}")
