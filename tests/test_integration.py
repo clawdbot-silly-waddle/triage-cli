@@ -154,12 +154,11 @@ class TestGetDomains:
         for domain in domains:
             assert isinstance(domain, str)
 
-    def test_get_domains_sorted(self, client: TriageClient) -> None:
-        """Test that domains are returned sorted."""
+    def test_get_domains_deduplicated(self, client: TriageClient) -> None:
+        """Test that domains are deduplicated."""
         domains = client.get_domains(TEST_SUBMISSION_ID, TEST_ANALYSIS_NAME)
 
-        if len(domains) > 1:
-            assert domains == sorted(domains), "Domains should be sorted alphabetically"
+        assert len(domains) == len(set(domains)), "Domains should be unique"
 
 
 class TestGetDumpedFiles:

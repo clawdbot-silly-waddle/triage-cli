@@ -130,37 +130,39 @@ class TriageClient:
         return response.json()
 
     def get_domains(self, submission_id: str, analysis_name: str) -> list[str]:
-        """Get contacted domains/URLs from an analysis.
+        """Get contacted domains from an analysis.
+
+        Extracts domains from DNS requests/responses and network flows,
+        deduplicated in first-contact order.
 
         Args:
             submission_id: The submission ID
             analysis_name: The analysis name
 
         Returns:
-            List of domains/URLs
+            Deduplicated list of domains in first-contact order
         """
         report = self.get_report(submission_id, analysis_name)
-        domains: set[str] = set()
+        seen: dict[str, None] = {}  # ordered dict as ordered set
 
-        # Extract domains from network activity
         network = report.get("network", {})
 
-        # URLs from HTTP requests
-        for http in network.get("http", []):
-            if "uri" in http:
-                domains.add(http["uri"])
+        # DNS requests/responses (chronological array order)
+        for req in network.get("requests", []):
+            for section in ("dns_request", "dns_response"):
+                for d in (req.get(section) or {}).get("domains", []):
+                    if d:
+                        seen.setdefault(d, None)
 
-        # Domains from DNS requests
-        for dns in network.get("dns", []):
-            if "hostname" in dns:
-                domains.add(dns["hostname"])
+        # Network flows, sorted by first_seen timestamp
+        for flow in sorted(
+            network.get("flows", []), key=lambda f: f.get("first_seen", 0)
+        ):
+            d = flow.get("domain", "")
+            if d:
+                seen.setdefault(d, None)
 
-        # Domains from connections
-        for conn in network.get("connections", []):
-            if "dst" in conn:
-                domains.add(conn["dst"])
-
-        return sorted(domains)
+        return list(seen)
 
     def get_dumped_files(self, submission_id: str, analysis_name: str) -> list[dict[str, Any]]:
         """Get list of dumped files from dynamic analysis.

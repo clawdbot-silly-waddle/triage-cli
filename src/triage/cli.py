@@ -213,12 +213,13 @@ def domains(target: str, prefix: str | None) -> None:
         with TriageClient() as client:
             is_explicit = isinstance(TargetParser.parse(target), AnalysisTarget)
             analyses = resolve_analyses(client, target)
-            all_domains: set[str] = set()
+            all_domains: dict[str, None] = {}
 
             for submission_id, analysis_name in analyses:
                 try:
                     domains_list = client.get_domains(submission_id, analysis_name)
-                    all_domains.update(domains_list)
+                    for d in domains_list:
+                        all_domains.setdefault(d, None)
                 except APIError:
                     if is_explicit:
                         raise
@@ -229,7 +230,7 @@ def domains(target: str, prefix: str | None) -> None:
 
             output_path = resolve_output_path(prefix, "domains.txt")
             with open(output_path, "w", encoding="utf-8") as f:
-                for domain in sorted(all_domains):
+                for domain in all_domains:
                     f.write(f"{domain}\n")
 
             click.echo(f"Domains saved to: {output_path}")
