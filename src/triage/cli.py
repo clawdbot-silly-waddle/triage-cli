@@ -4,16 +4,12 @@ from __future__ import annotations
 
 import zipfile
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import click
 
 from triage.api import APIError, TriageClient
 from triage.config import ConfigError
 from triage.target import AnalysisTarget, HashTarget, SubmissionTarget, TargetParser
-
-if TYPE_CHECKING:
-    from typing import Any
 
 
 ZIP_PASSWORD = b"infected"
@@ -81,6 +77,28 @@ def resolve_target(
         return [(parsed.submission_id, "")]
 
     return []
+
+
+def resolve_analyses(
+    client: TriageClient, target_str: str
+) -> list[tuple[str, str]]:
+    """Resolve a target to concrete (submission_id, analysis_name) pairs.
+
+    Unlike resolve_target, this expands submissions into their individual
+    analyses so callers get a flat list of specific analyses to process.
+    """
+    targets = resolve_target(client, target_str)
+    result: list[tuple[str, str]] = []
+    for submission_id, analysis_name in targets:
+        if analysis_name:
+            result.append((submission_id, analysis_name))
+        else:
+            submission_data = client.get_submission(submission_id)
+            for analysis in submission_data.get("analyses", []):
+                name = analysis.get("name", "")
+                if name:
+                    result.append((submission_id, name))
+    return result
 
 
 def resolve_output_path(prefix: str | None, filename: str) -> Path:
@@ -155,10 +173,13 @@ def sample(target: str, prefix: str | None) -> None:
 
             # Extract and remove ZIP
             extract_dir = output_zip.parent
-            with zipfile.ZipFile(output_zip, "r") as zf:
-                zf.extractall(extract_dir, pwd=ZIP_PASSWORD)
-
-            output_zip.unlink()
+            try:
+                with zipfile.ZipFile(output_zip, "r") as zf:
+                    zf.extractall(extract_dir, pwd=ZIP_PASSWORD)
+            except (zipfile.BadZipFile, RuntimeError) as e:
+                raise click.ClickException(f"Failed to extract ZIP: {e}")
+            finally:
+                output_zip.unlink(missing_ok=True)
 
             # Find extracted file (should be the sample)
             extracted_files = list(extract_dir.iterdir())
@@ -190,64 +211,22 @@ def domains(target: str, prefix: str | None) -> None:
     """
     try:
         with TriageClient() as client:
-            parsed = TargetParser.parse(target)
-
+            is_explicit = isinstance(TargetParser.parse(target), AnalysisTarget)
+            analyses = resolve_analyses(client, target)
             all_domains: set[str] = set()
 
-            if isinstance(parsed, HashTarget):
-                # Search for submissions by hash
-                results = client.search_by_hash(parsed.hash_value)
-                if not results:
-                    raise click.ClickException(
-                        f"No samples found for hash: {parsed.hash_value}"
-                    )
-
-                # Collect domains from all analyses
-                for submission in results:
-                    submission_id = submission.get("id")
-                    if not submission_id:
-                        continue
-
-                    submission_data = client.get_submission(submission_id)
-                    analyses = submission_data.get("analyses", [])
-
-                    for analysis in analyses:
-                        analysis_name = analysis.get("name", "")
-                        if analysis_name:
-                            try:
-                                domains = client.get_domains(submission_id, analysis_name)
-                                all_domains.update(domains)
-                            except APIError:
-                                # Skip analyses without reports
-                                pass
-
-            elif isinstance(parsed, AnalysisTarget):
-                # Single analysis
-                domains = client.get_domains(parsed.submission_id, parsed.analysis_name)
-                all_domains.update(domains)
-
-            elif isinstance(parsed, SubmissionTarget):
-                # All analyses in submission
-                submission_data = client.get_submission(parsed.submission_id)
-                analyses = submission_data.get("analyses", [])
-
-                for analysis in analyses:
-                    analysis_name = analysis.get("name", "")
-                    if analysis_name:
-                        try:
-                            domains = client.get_domains(
-                                parsed.submission_id, analysis_name
-                            )
-                            all_domains.update(domains)
-                        except APIError:
-                            # Skip analyses without reports
-                            pass
+            for submission_id, analysis_name in analyses:
+                try:
+                    domains_list = client.get_domains(submission_id, analysis_name)
+                    all_domains.update(domains_list)
+                except APIError:
+                    if is_explicit:
+                        raise
 
             if not all_domains:
                 click.echo("No domains found.")
                 return
 
-            # Write output
             output_path = resolve_output_path(prefix, "domains.txt")
             with open(output_path, "w", encoding="utf-8") as f:
                 for domain in sorted(all_domains):
@@ -272,90 +251,27 @@ def dumps(target: str, prefix: str | None) -> None:
     """
     try:
         with TriageClient() as client:
-            parsed = TargetParser.parse(target)
+            is_explicit = isinstance(TargetParser.parse(target), AnalysisTarget)
+            analyses = resolve_analyses(client, target)
 
-            files_to_download: list[tuple[str, str, str, str]] = (
-                []
-            )  # (submission_id, analysis_name, file_name, filename)
+            # (submission_id, analysis_name, file_name, filename)
+            files_to_download: list[tuple[str, str, str, str]] = []
 
-            if isinstance(parsed, HashTarget):
-                # Search for submissions by hash
-                results = client.search_by_hash(parsed.hash_value)
-                if not results:
-                    raise click.ClickException(
-                        f"No samples found for hash: {parsed.hash_value}"
-                    )
-
-                # Collect dumped files from all analyses
-                for submission in results:
-                    submission_id = submission.get("id")
-                    if not submission_id:
-                        continue
-
-                    submission_data = client.get_submission(submission_id)
-                    analyses = submission_data.get("analyses", [])
-
-                    for analysis in analyses:
-                        analysis_name = analysis.get("name", "")
-                        if analysis_name:
-                            try:
-                                dumped = client.get_dumped_files(
-                                    submission_id, analysis_name
-                                )
-                                for f in dumped:
-                                    file_name = f.get("name", "")
-                                    if file_name:
-                                        files_to_download.append(
-                                            (
-                                                submission_id,
-                                                analysis_name,
-                                                file_name,
-                                                f.get("filename", file_name),
-                                            )
-                                        )
-                            except APIError:
-                                pass
-
-            elif isinstance(parsed, AnalysisTarget):
-                # Single analysis
-                dumped = client.get_dumped_files(parsed.submission_id, parsed.analysis_name)
-                for f in dumped:
-                    file_name = f.get("name", "")
-                    if file_name:
-                        files_to_download.append(
-                            (
-                                parsed.submission_id,
-                                parsed.analysis_name,
+            for submission_id, analysis_name in analyses:
+                try:
+                    dumped = client.get_dumped_files(submission_id, analysis_name)
+                    for f in dumped:
+                        file_name = f.get("name", "")
+                        if file_name:
+                            files_to_download.append((
+                                submission_id,
+                                analysis_name,
                                 file_name,
                                 f.get("filename", file_name),
-                            )
-                        )
-
-            elif isinstance(parsed, SubmissionTarget):
-                # All analyses in submission
-                submission_data = client.get_submission(parsed.submission_id)
-                analyses = submission_data.get("analyses", [])
-
-                for analysis in analyses:
-                    analysis_name = analysis.get("name", "")
-                    if analysis_name:
-                        try:
-                            dumped = client.get_dumped_files(
-                                parsed.submission_id, analysis_name
-                            )
-                            for f in dumped:
-                                file_name = f.get("name", "")
-                                if file_name:
-                                    files_to_download.append(
-                                        (
-                                            parsed.submission_id,
-                                            analysis_name,
-                                            file_name,
-                                            f.get("filename", file_name),
-                                        )
-                                    )
-                        except APIError:
-                            pass
+                            ))
+                except APIError:
+                    if is_explicit:
+                        raise
 
             if not files_to_download:
                 click.echo("No dumped files found.")
@@ -364,8 +280,6 @@ def dumps(target: str, prefix: str | None) -> None:
             # Determine output directory
             if prefix and prefix.endswith("/"):
                 output_dir = Path(prefix.replace("~", str(Path.home())))
-            elif prefix:
-                output_dir = Path(".")
             else:
                 output_dir = Path(".")
 
@@ -375,12 +289,9 @@ def dumps(target: str, prefix: str | None) -> None:
             downloaded: list[Path] = []
             seen_names: dict[str, int] = {}
             for submission_id, analysis_name, file_name, filename in files_to_download:
-                # Sanitize filename to avoid path issues (e.g., "files/fstream-1.dat")
                 safe_filename = filename.replace("/", "-")
-                # Disambiguate filename to handle duplicates
                 unique_filename = disambiguate_filename(safe_filename, seen_names)
                 if prefix and not prefix.endswith("/"):
-                    # Add prefix to filename
                     output_filename = f"{prefix}-{submission_id}-{analysis_name}-{unique_filename}"
                 else:
                     output_filename = f"{submission_id}-{analysis_name}-{unique_filename}"
