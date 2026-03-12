@@ -15,7 +15,7 @@ A Python CLI tool for interacting with the [tria.ge](https://tria.ge) malware an
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/clawdbot-silly-waddle/triage-cli.git
 cd triage-cli
 
 # Install with uv
@@ -144,4 +144,4 @@ uv run ruff format src/
 
 ## License
 
-[Add your license here]
+MIT
