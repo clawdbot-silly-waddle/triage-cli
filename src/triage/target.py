@@ -62,22 +62,18 @@ class TargetParser:
         r"^https?://tria\.ge/([^/]+)(?:/([^/]+))?/?$"
     )
 
-    # Hash patterns
-    HASH_PATTERNS: ClassVar[dict[str, tuple[int, re.Pattern[str] | None]]] = {
-        # (length, pattern) - pattern is None for hex-only hashes
+    # Hash patterns: (expected_length_or_0, regex)
+    HASH_PATTERNS: ClassVar[dict[str, tuple[int, re.Pattern[str]]]] = {
         "MD5": (32, re.compile(r"^[a-fA-F0-9]{32}$")),
         "SHA1": (40, re.compile(r"^[a-fA-F0-9]{40}$")),
         "SHA256": (64, re.compile(r"^[a-fA-F0-9]{64}$")),
         "SHA512": (128, re.compile(r"^[a-fA-F0-9]{128}$")),
-        "SSDEEP": (
-            0,
-            re.compile(r"^\d+:[a-zA-Z0-9+/]+:[a-zA-Z0-9+/]+$"),
-        ),  # Variable length
-        "TLSH": (
-            0,
-            re.compile(r"^T[0-9A-F]{71}$"),
-        ),  # T1 format: T + 71 hex chars = 72 total
+        "SSDEEP": (0, re.compile(r"^\d+:[a-zA-Z0-9+/]+:[a-zA-Z0-9+/]+$")),
+        "TLSH": (0, re.compile(r"^T[0-9A-F]{71}$")),
     }
+
+    # Hex hash types that should be lowercased
+    _HEX_HASHES: ClassVar[frozenset[str]] = frozenset({"MD5", "SHA1", "SHA256", "SHA512"})
 
     @classmethod
     def parse(cls, target: str) -> HashTarget | SubmissionTarget | AnalysisTarget:
@@ -135,20 +131,10 @@ class TargetParser:
         """
         hash_value = hash_value.strip()
 
-        for hash_type, (length, pattern) in cls.HASH_PATTERNS.items():
-            if pattern is None:
-                # Simple length check for hex hashes
-                if len(hash_value) == length:
-                    return HashTarget(hash_value.lower(), hash_type)
-            elif hash_type in ("MD5", "SHA1", "SHA256", "SHA512"):
-                # Hex hashes - normalize to lowercase
-                if pattern.match(hash_value):
-                    return HashTarget(hash_value.lower(), hash_type)
-            else:
-                # Pattern match for complex hashes
-                if pattern.match(hash_value):
-                    # Preserve case for non-hex hashes like TLSH
-                    return HashTarget(hash_value, hash_type)
+        for hash_type, (_length, pattern) in cls.HASH_PATTERNS.items():
+            if pattern.match(hash_value):
+                normalized = hash_value.lower() if hash_type in cls._HEX_HASHES else hash_value
+                return HashTarget(normalized, hash_type)
 
         return None
 
@@ -164,12 +150,8 @@ class TargetParser:
         """
         hash_value = hash_value.strip()
 
-        for hash_type, (length, pattern) in cls.HASH_PATTERNS.items():
-            if pattern is None:
-                if len(hash_value) == length:
-                    return hash_type
-            else:
-                if pattern.match(hash_value):
-                    return hash_type
+        for hash_type, (_length, pattern) in cls.HASH_PATTERNS.items():
+            if pattern.match(hash_value):
+                return hash_type
 
         return None
